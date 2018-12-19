@@ -1,14 +1,12 @@
 import sqlite3
+import databaseSetup
 
+databaseSetup.setup()
 cardsConn = sqlite3.connect('cards.db')
 cardsDB = cardsConn.cursor()
 
 
 def setupPlayers(count):
-    cardsDB.execute('''DROP TABLE players''')
-    cardsDB.execute('''CREATE TABLE players
-                 (id integer, money integer, status integer)''')
-
     for i in range(count):
         cardsDB.execute(
             "INSERT INTO players VALUES (?, 1500, 0)", (i, ))
@@ -35,12 +33,19 @@ def getRent(position):
     cardsDB.execute(
         'SELECT houses_count FROM streets WHERE position=?', (position, ))
     value = cardsDB.fetchone()
+    count = value[0]
     houses = "house_" + str(value[0])
 
-    cardsDB.execute(
-        "SELECT "+houses+" FROM streets WHERE position=?", (position, ))
-    value = cardsDB.fetchone()
-    return value[0]
+    if(count < 5):
+        cardsDB.execute(
+            "SELECT "+houses+" FROM streets WHERE position=?", (position, ))
+        value = cardsDB.fetchone()
+        return value[0]
+    elif(count == 5):
+        cardsDB.execute(
+            "SELECT hotel_price FROM streets WHERE position=?", (position, ))
+        value = cardsDB.fetchone()
+        return value[0]
 
 
 # Database update functions
@@ -48,6 +53,12 @@ def getRent(position):
 def updateAccountBalance(player, amount):
     cardsDB.execute(
         'UPDATE players SET money = money + ? WHERE id=?', (amount, player, ))
+    cardsConn.commit()
+
+
+def changeOwner(position, player):
+    cardsDB.execute(
+        "UPDATE streets SET owner = ? WHERE position=?", (player, position, ))
     cardsConn.commit()
 
 # Game actions
@@ -61,6 +72,32 @@ def buyOffer(position, player):
     name = value[0]
     price = value[1]
     return "Czy chcesz kupic " + str(name) + " za " + str(price) + "?/Tak/Nie"
+
+
+def buyHouseOffer(position, player):
+    cardsDB.execute(
+        'SELECT house_price, house_count, hotel_price FROM streets WHERE position=?', (position, ))
+    value = cardsDB.fetchone()
+    price = value[0]
+    count = value[1]
+    hotel_price = value[2]
+
+    if(count < 5):
+        message = "Ile domków chcesz postawić? Stan konta: " + \
+            getAccountBalance(player) + "/"
+        for house in range(0, 4 - count):
+            message = message + house + " (" + str(house*price) + " pln)/"
+        message = "hotel (" + str((count*price) + hotel_price) + " pln)"
+        return message
+
+
+def buy(position, player):
+    cardsDB.execute(
+        'SELECT price FROM streets WHERE position=?', (position, ))
+    value = cardsDB.fetchone()
+    price = value[0]
+    updateAccountBalance(player, -price)
+    changeOwner(position, player)
 
 
 def pay(position, player, owner):
