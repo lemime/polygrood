@@ -34,6 +34,11 @@ class TestStringMethods(unittest.TestCase):
         self.assertEqual(game.getAccountBalance(3), 1500 - 120)
         self.assertEqual(game.getOwner(7), 3)
 
+    def test_pay(self):
+        game.pay(6, 2, 3)
+        self.assertEqual(game.getAccountBalance(2), 1494)
+        self.assertEqual(game.getAccountBalance(3), 1506)
+
 
 if __name__ == '__main__':
     unittest.main(exit=False)
