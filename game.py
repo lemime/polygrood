@@ -76,7 +76,7 @@ def buyOffer(position, player):
 
 def buyHouseOffer(position, player):
     cardsDB.execute(
-        'SELECT house_price, house_count, hotel_price FROM streets WHERE position=?', (position, ))
+        'SELECT house_price, houses_count, hotel_price FROM streets WHERE position=?', (position, ))
     value = cardsDB.fetchone()
     price = value[0]
     count = value[1]
@@ -84,10 +84,14 @@ def buyHouseOffer(position, player):
 
     if(count < 5):
         message = "Ile domków chcesz postawić? Stan konta: " + \
-            getAccountBalance(player) + "/"
+            str(getAccountBalance(player)) + "/"
         for house in range(0, 4 - count):
-            message = message + house + " (" + str(house*price) + " pln)/"
-        message = "hotel (" + str((count*price) + hotel_price) + " pln)"
+            if(house*price < getAccountBalance(player)):
+                message = message + str(house) + \
+                    " (" + str(house*price) + " pln)/"
+        if(count*price < getAccountBalance(player)):
+            message = message + \
+                "hotel (" + str((count*price) + hotel_price) + " pln)"
         return message
 
 
@@ -97,6 +101,17 @@ def buy(position, player):
     value = cardsDB.fetchone()
     price = value[0]
     updateAccountBalance(player, -price)
+    changeOwner(position, player)
+
+
+def buyHouse(position, player, count):
+    cardsDB.execute(
+        'SELECT house_price FROM streets WHERE position=?', (position, ))
+    value = cardsDB.fetchone()
+    price = value[0]
+    print(price)
+    print(getAccountBalance(player))
+    updateAccountBalance(player, count*(-price))
     changeOwner(position, player)
 
 
@@ -125,8 +140,8 @@ def main():
         message = message.split(",")
 
         if(message[0] == "position"):
-            position = message[1]
-            player = message[2]
+            position = int(message[1])
+            player = int(message[2])
             if(int(position) in shipPositions):
                 # TO DO
                 # kup statek
@@ -139,10 +154,9 @@ def main():
                 answer = ""
                 if(owner == 0):
                     answer = buyOffer(position, player)
+                    # changeOwner(position, player)
                 elif(owner == player):
-                    answer = "Jesteś u siebie :)"
-                    # TO DO
-                    # Budowanie domków i hoteli
+                    answer = buyHouseOffer(position, player)
                 elif(owner != player):
                     answer = pay(position, player, owner)
 
