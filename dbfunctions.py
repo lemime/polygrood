@@ -54,6 +54,17 @@ def getAccountBalance(player):
     return value[0]
 
 
+def isBuildUp(position):
+    cardsDB.execute(
+        'SELECT houses_count FROM streets WHERE position=?', (position, ))
+    value = cardsDB.fetchone()
+    count = value[0]
+    if(count > 0):
+        return 1
+    else:
+        return 0
+
+
 def getRent(position):
     cardsDB.execute(
         'SELECT houses_count FROM streets WHERE position=?', (position, ))
@@ -90,6 +101,13 @@ def getSpaceshipName(position):
     return value[0]
 
 
+def getSpaceshipOwner(position):
+    cardsDB.execute(
+        'SELECT owner FROM spaceships WHERE position=?', (position, ))
+    value = cardsDB.fetchone()
+    return value[0]
+
+
 def getSpaceshipPrice(position):
     cardsDB.execute(
         'SELECT price FROM spaceships WHERE position=?', (position, ))
@@ -107,13 +125,40 @@ def getTicketPrice(position, owner):
     value = cardsDB.fetchone()
     return value[0]
 
+
+def monopolCheck(position, player):
+    cardsDB.execute(
+        'SELECT kit FROM streets WHERE position=?', (position, ))
+    value = cardsDB.fetchone()
+    kit = value[0]
+    cardsDB.execute(
+        'SELECT count(*) FROM streets WHERE kit=?', (kit, ))
+    value = cardsDB.fetchone()
+    kitSize = value[0]
+    cardsDB.execute(
+        'SELECT count(*) FROM streets WHERE kit=? and owner=?', (kit, player, ))
+    value = cardsDB.fetchone()
+    playerKitCardsCount = value[0]
+    if(kitSize == playerKitCardsCount):
+        return 1
+    else:
+        return 0
+
+
 # DB update functions
 
 
 def updateAccountBalance(player, amount):
     cardsDB.execute(
-        'UPDATE players SET money = money + ? WHERE id=?', (amount, player, ))
-    cardsConn.commit()
+        'SELECT money FROM players WHERE id=?', (player, ))
+    value = cardsDB.fetchone()
+    if(value[0] > amount):
+        cardsDB.execute(
+            'UPDATE players SET money = money + ? WHERE id=?', (amount, player, ))
+        cardsConn.commit()
+        return 1
+    else:
+        return 0
 
 
 def changeOwner(position, player):
@@ -125,6 +170,12 @@ def changeOwner(position, player):
 def changeSpaceshipOwner(position, player):
     cardsDB.execute(
         "UPDATE spaceships SET owner = ? WHERE position=?", (player, position, ))
+    cardsConn.commit()
+
+
+def updateHouseCount(position, houses_bought):
+    cardsDB.execute(
+        "UPDATE streets SET houses_count = houses_count + ? WHERE position=?", (houses_bought, position, ))
     cardsConn.commit()
 
 

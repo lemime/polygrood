@@ -47,6 +47,29 @@ class TestStringMethods(unittest.TestCase):
         dbfunctions.changeSpaceshipOwner(4, 1)
         self.assertEqual(dbfunctions.getTicketPrice(4, 1), 25)
 
+    def test_getOwner(self):
+        self.assertEqual(dbfunctions.getSpaceshipOwner(4), 0)
+
+    def test_monopoly(self):
+        self.assertEqual(dbfunctions.monopolCheck(25, 0), 1)
+
+    def test_monopoly2(self):
+        dbfunctions.changeOwner(25, 1)
+        self.assertEqual(dbfunctions.monopolCheck(25, 1), 0)
+
+    def test_monopoly3(self):
+        dbfunctions.changeOwner(25, 1)
+        dbfunctions.changeOwner(26, 1)
+        dbfunctions.changeOwner(27, 1)
+        self.assertEqual(dbfunctions.monopolCheck(25, 1), 1)
+
+    def test_isBuild(self):
+        self.assertEqual(dbfunctions.isBuildUp(25), 0)
+
+    def test_isBuild2(self):
+        dbfunctions.updateHouseCount(25, 2)
+        self.assertEqual(dbfunctions.isBuildUp(25), 1)
+
 
 if __name__ == '__main__':
     unittest.main(exit=False)
