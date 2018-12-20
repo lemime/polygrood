@@ -82,6 +82,31 @@ def getHousesData(position):
     hotel_price = value[2]
     return price, count, hotel_price
 
+
+def getSpaceshipName(position):
+    cardsDB.execute(
+        'SELECT name FROM spaceships WHERE position=?', (position, ))
+    value = cardsDB.fetchone()
+    return value[0]
+
+
+def getSpaceshipPrice(position):
+    cardsDB.execute(
+        'SELECT price FROM spaceships WHERE position=?', (position, ))
+    value = cardsDB.fetchone()
+    return value[0]
+
+
+def getTicketPrice(position, owner):
+    cardsDB.execute(
+        'SELECT count(*) FROM spaceships WHERE owner=?', (owner, ))
+    value = cardsDB.fetchone()
+    cardsOwned = "spaceship_" + str(value[0])
+    cardsDB.execute(
+        "SELECT "+cardsOwned+" FROM spaceships WHERE position=?", (position, ))
+    value = cardsDB.fetchone()
+    return value[0]
+
 # DB update functions
 
 
@@ -94,6 +119,12 @@ def updateAccountBalance(player, amount):
 def changeOwner(position, player):
     cardsDB.execute(
         "UPDATE streets SET owner = ? WHERE position=?", (player, position, ))
+    cardsConn.commit()
+
+
+def changeSpaceshipOwner(position, player):
+    cardsDB.execute(
+        "UPDATE spaceships SET owner = ? WHERE position=?", (player, position, ))
     cardsConn.commit()
 
 

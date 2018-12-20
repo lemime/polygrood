@@ -39,16 +39,16 @@ def setup():
     c.execute("INSERT INTO streets VALUES ('Informatyka', 31, 400, 50, 200, 600, 1400, 1700, 2000, 200, 1000, 200, 0, 0, 0)")
 
     c.execute('''CREATE TABLE spaceships
-                (name text, position integer, price integer, one_spaceship integer, two_spaceships integer, three_spaceships integer, four_spaceships integer, mortgage_value integer)''')
+                (name text, position integer, price integer, spaceship_1 integer, spaceship_2  integer, spaceship_3  integer, spaceship_4  integer, mortgage_value integer, owner integer, pledge integer)''')
 
     c.execute(
-        "INSERT INTO spaceships VALUES ('Carbon X-20', 4, 200, 25, 50, 100, 200, 100)")
+        "INSERT INTO spaceships VALUES ('Carbon X-20', 4, 200, 25, 50, 100, 200, 100, 0, 0)")
     c.execute(
-        "INSERT INTO spaceships VALUES ('Santa C-40', 12, 200, 25, 50, 100, 200, 100)")
+        "INSERT INTO spaceships VALUES ('Santa C-40', 12, 200, 25, 50, 100, 200, 100, 0, 0)")
     c.execute(
-        "INSERT INTO spaceships VALUES ('Grant R-10', 20, 200, 25, 50, 100, 200, 100)")
+        "INSERT INTO spaceships VALUES ('Grant R-10', 20, 200, 25, 50, 100, 200, 100, 0, 0)")
     c.execute(
-        "INSERT INTO spaceships VALUES ('AZERSTAF', 28, 200, 25, 50, 100, 200, 100)")
+        "INSERT INTO spaceships VALUES ('AZERSTAF', 28, 200, 25, 50, 100, 200, 100, 0, 0)")
 
     c.execute('''CREATE TABLE players (id integer, money integer, status integer)''')
 

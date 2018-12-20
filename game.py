@@ -1,13 +1,16 @@
 import dbfunctions
 
+spaceshipPositions = [4, 12, 20, 28]
+specialPositions = [0, 2, 8, 16, 24, 30]
 
-def buyOffer(position, player):
+
+def getStreetOffer(position, player):
     name = dbfunctions.getName(position)
     price = dbfunctions.getPrice(position)
     return "Czy chcesz kupic " + str(name) + " za " + str(price) + "?/Tak/Nie"
 
 
-def buyHouseOffer(position, player):
+def getHouseOffer(position, player):
     price, count, hotel_price = dbfunctions.getHousesData(position)
     if(count < 5):
         message = "Ile domków chcesz postawić? Stan konta: " + \
@@ -22,7 +25,13 @@ def buyHouseOffer(position, player):
         return message
 
 
-def buy(position, player):
+def getSpaceshipOffer(position):
+    name = dbfunctions.getSpaceshipName(position)
+    price = dbfunctions.getSpaceshipPrice(position)
+    return "Czy chcesz kupic " + str(name) + " za " + str(price) + "?/Tak/Nie"
+
+
+def buyStreet(position, player):
     price = dbfunctions.getPrice(position)
     dbfunctions.updateAccountBalance(player, -price)
     dbfunctions.changeOwner(position, player)
@@ -36,11 +45,11 @@ def buyHouse(position, player, count):
     dbfunctions.changeOwner(position, player)
 
 
-def pay(position, player, owner):
+def payRent(position, player, owner):
     playerMoney = dbfunctions.getAccountBalance(player)
     rent = dbfunctions.getRent(position)
 
-    if(int(playerMoney) > int(rent)):
+    if(playerMoney > rent):
         dbfunctions.updateAccountBalance(player, -rent)
         dbfunctions.updateAccountBalance(owner, rent)
         return "Zaplaciles " + str(rent) + " graczowi " + str(player)
@@ -51,38 +60,64 @@ def pay(position, player, owner):
         return "Nie masz wystarczajacych srodkow"
 
 
+def payTicket(position, player, owner):
+    playerMoney = dbfunctions.getAccountBalance(player)
+    price = dbfunctions.getTicketPrice(position, owner)
+    if(playerMoney > price):
+        dbfunctions.updateAccountBalance(player, -price)
+        dbfunctions.updateAccountBalance(owner, price)
+        return "Zaplaciles " + str(price) + " graczowi " + str(player)
+
+    else:
+        # TO DO
+        # Opcja zastaw
+        return "Nie masz wystarczajacych srodkow"
+
+
+def buySpaceship(position, player):
+    price = dbfunctions.getSpaceshipPrice(position)
+    dbfunctions.updateAccountBalance(player, -price)
+    dbfunctions.changeSpaceshipOwner(position, player)
+
+
+def newPosition(position, player):
+    messeage = ""
+    if(position in specialPositions):
+        # TO DO
+        print("Pole specjalne")
+    else:
+        owner = dbfunctions.getOwner(position)
+        if(owner == 0):
+            if(position in spaceshipPositions):
+                messeage = getSpaceshipOffer(position)
+            else:
+                messeage = getStreetOffer(position, player)
+            # dbfunctions.changeOwner(position, player)
+        elif(owner == player):
+            if(position in spaceshipPositions):
+                messeage = "next"
+            else:
+                messeage = getHouseOffer(position, player)
+        elif(owner != player):
+            if(position in spaceshipPositions):
+                messeage = payTicket(position, player, owner)
+            else:
+                messeage = payRent(position, player, owner)
+
+        print(messeage)
+
+
 def main():
-    shipPositions = [4, 12, 20, 28]
-    specialPositions = [0, 2, 8, 16, 24, 30]
+
     dbfunctions.setupPlayers(4)
     while True:
 
         message = input()
         message = message.split(",")
-
-        if(message[0] == "position"):
-            position = int(message[1])
-            player = int(message[2])
-            if(int(position) in shipPositions):
-                # TO DO
-                # kup statek
-                print("Kup statek")
-            elif(int(position) in specialPositions):
-                # TO DO
-                print("Pole specjalne")
-            else:
-                owner = dbfunctions.getOwner(position)
-                answer = ""
-                if(owner == 0):
-                    answer = buyOffer(position, player)
-                    # dbfunctions.changeOwner(position, player)
-                elif(owner == player):
-                    answer = buyHouseOffer(position, player)
-                elif(owner != player):
-                    answer = pay(position, player, owner)
-
-                print(answer)
-        elif (message[0] == "decision"):
+        action = message[0]
+        if(action == "newPosition"):
+            newPosition(int(message[1]), int(message[2]))
+        elif (action == "decision"):
             print('sdfsd')
 
 

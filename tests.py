@@ -30,15 +30,22 @@ class TestStringMethods(unittest.TestCase):
         dbfunctions.changeOwner(3, 2)
         self.assertEqual(dbfunctions.getOwner(3), 2)
 
-    def test_buy(self):
-        game.buy(7, 3)
+    def test_buyStreet(self):
+        game.buyStreet(7, 3)
         self.assertEqual(dbfunctions.getAccountBalance(3), 1500 - 120)
         self.assertEqual(dbfunctions.getOwner(7), 3)
 
-    def test_pay(self):
-        game.pay(6, 2, 3)
+    def test_payRent(self):
+        game.payRent(6, 2, 3)
         self.assertEqual(dbfunctions.getAccountBalance(2), 1494)
         self.assertEqual(dbfunctions.getAccountBalance(3), 1506)
+
+    def test_ticketPrice(self):
+        self.assertEqual(dbfunctions.getTicketPrice(4, 0), 200)
+
+    def test_changeSpaceshipOwner(self):
+        dbfunctions.changeSpaceshipOwner(4, 1)
+        self.assertEqual(dbfunctions.getTicketPrice(4, 1), 25)
 
 
 if __name__ == '__main__':
