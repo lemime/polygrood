@@ -2,55 +2,47 @@ import dbfunctions
 import random
 
 
+# TO DO
+# Zastawianie ulic / kredyt od banku
+# Pensja 200 zł, status blokady (Arduino)
+# Bankructwo
+# Nie ma oferty jak nie ma środków
+
+
 spaceshipPositions = [4, 12, 20, 28]
 specialPositions = [0, 2, 8, 16, 24, 30]
 scholarship = 0
 
 
-def getStreetOffer(position, player):
-    name = dbfunctions.getName(position)
+def getStreetOffer(position):
     price = dbfunctions.getPrice(position)
-    return "Czy chcesz kupic " + str(name) + " za " + str(price) + "?/Tak/Nie"
-
-
-def getHouseOffer(position, player):
-    price, count, hotel_price = dbfunctions.getHousesData(position)
-    if(count < 5):
-        message = "Ile domków chcesz postawić? Stan konta: " + \
-            str(dbfunctions.getAccountBalance(player)) + "/"
-        for house in range(0, 5 - count):
-            if(house*price < dbfunctions.getAccountBalance(player)):
-                message = message + str(house) + \
-                    " (" + str(house*price) + " pln)/"
-        if(count*price < dbfunctions.getAccountBalance(player)):
-            message = message + \
-                "hotel (" + str((count*price) + hotel_price) + " pln)"
-        return message
-    else:
-        return "next"
+    return "[buyStreet],Kupic za " + str(price) + ","
 
 
 def getSpaceshipOffer(position):
     name = dbfunctions.getSpaceshipName(position)
-    price = dbfunctions.getSpaceshipPrice(position)
-    return "Czy chcesz kupic " + str(name) + " za " + str(price) + "?/Tak/Nie"
+    return "[buySpaceship],Kupic " + str(name) + ","
 
 
 def buyStreet(position, player):
+    name = dbfunctions.getName(position)
     price = dbfunctions.getPrice(position)
     dbfunctions.updateAccountBalance(player, -price)
     dbfunctions.changeOwner(position, player)
+    return "[info],Kupiles " + str(name)
 
 
-def buyHouse(position, player, count):
+def buyHouse(player, name):
+    position = dbfunctions.getPosition(name)
     price = dbfunctions.getHousePrice(position)
-    dbfunctions.updateAccountBalance(player, count*(-price))
-    dbfunctions.updateHouseCount(position, count)
+    dbfunctions.updateAccountBalance(player, -price)
+    dbfunctions.updateHouseCount(position)
+    return "[info],Kupiles domek"
 
 
 def payRent(position, player, owner):
     rent = dbfunctions.getRent(position)
-    if(dbfunctions.monopolCheck(position, owner) and not dbfunctions.isBuildUp(position)):
+    if(dbfunctions.monopolCheck(owner) and not dbfunctions.isBuildUp(position)):
         rent = rent * 2
     dbfunctions.updateAccountBalance(owner, rent)
 
@@ -77,9 +69,16 @@ def payTicket(position, player, owner):
 
 
 def buySpaceship(position, player):
+    name = dbfunctions.getSpaceshipName(position)
     price = dbfunctions.getSpaceshipPrice(position)
     dbfunctions.updateAccountBalance(player, -price)
     dbfunctions.changeSpaceshipOwner(position, player)
+    return "[info],Kupiles " + str(name)
+
+
+def getPositions(player):
+    positions = dbfunctions.getHouseAviliableStreets(player)
+    return "[aviliablePositions]," + ",".join(str(position) for position in positions)
 
 
 def passExam():
@@ -90,45 +89,65 @@ def passExam():
         return 0
 
 
+def generateOptions(position, player):
+    response = ""
+    if(position in spaceshipPositions):
+        owner = dbfunctions.getSpaceshipOwner(position)
+        if(owner == 0):
+            response = response + getSpaceshipOffer(position)
+    else:
+        owner = dbfunctions.getOwner(position)
+        if(owner == 0):
+            response = response + getStreetOffer(position)
+    kits = dbfunctions.getHouseAviliableStreets(player)
+    if(kits != 0):
+        response = response + "[buyHousesOption],Kupic domki?,"
+    if(response == ""):
+        response = "[exit]"
+    else:
+        response = "[options],Co chcesz zrobic?," + response + "[exit],Nic"
+    return response
+
+
 def newPosition(position, player):
     messeage = ""
     if(position in specialPositions):
         if(position == 2):
             if(dbfunctions.updateAccountBalance(player, -200)):
                 scholarship = scholarship + 200
-                messeage = "next/Zaplaciles za prace dyplomowa"
+                messeage = "[info],Zaplaciles za prace dyplomowa"
             else:
                 print("Nie masz srodkow")
         elif(position == 8):
-            messeage = "next/Odwiedzasz spadochroniarzy"
+            messeage = "[info],Odwiedzasz spadochroniarzy"
         elif(position == 16):
             dbfunctions.updateAccountBalance(player, scholarship)
             scholarship = 0
-            messeage = "next/Dostales " + \
-                str(scholarship) + "za stypendium naukowe."
+            messeage = "[info],Dostales " + \
+                str(scholarship) + "za stypendium naukowe"
         elif(position == 24):
             if(passExam):
-                messeage = "next/Zdałeś"
+                messeage = "[info],Zdałeś"
             else:
-                messeage = "statusBlocked"
+                messeage = "[blocked]"
         elif(position == 30):
-            messeage = "next"
+            if(dbfunctions.updateAccountBalance(player, -200)):
+                scholarship = scholarship + 200
+                messeage = "[info],Zaplaciles za projekt zaliczeniowy"
+            else:
+                print('nie masz srodkow')
     elif (position in spaceshipPositions):
         owner = dbfunctions.getSpaceshipOwner(position)
-        if(owner == 0):
-            messeage = getSpaceshipOffer(position)
-        elif(owner == player):
-            messeage = "next"
-        elif(owner != player):
+        if(owner != player & owner != 0):
             messeage = payTicket(position, player, owner)
+        else:
+            messeage = generateOptions(position, player)
     else:
         owner = dbfunctions.getOwner(position)
-        if(owner == 0):
-            messeage = getStreetOffer(position, player)
-        elif(owner == player):
-            messeage = getHouseOffer(position, player)
-        elif(owner != player):
+        if(owner != player & owner != 0):
             messeage = payRent(position, player, owner)
+        else:
+            messeage = generateOptions(position, player)
 
     return messeage
 
@@ -146,11 +165,18 @@ def main():
             # serial.print("lcd/"+messeage)
             print(answer)
         elif(action == "buyStreet"):
-            buyStreet(int(message[1]), int(message[2]))
-        elif (action == "buyHouse"):
-            buyHouse(int(message[1]), int(message[2]), int(message[3]))
+            answer = buyStreet(int(message[1]), int(message[2]))
+            print(answer)
         elif (action == "buySpaceship"):
-            buySpaceship(int(message[1]), int(message[2]))
+            answer = buySpaceship(int(message[1]), int(message[2]))
+            print(answer)
+        elif (action == "buyHousesOption"):
+            answer = getPositions(int(message[2]))
+            print(answer)
+        elif (action == "buyHouse"):
+            answer = buyHouse(int(message[1]),
+                              message[2])
+            print(answer)
 
 
 if __name__ == "__main__":

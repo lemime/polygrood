@@ -26,6 +26,13 @@ def getName(position):
     return value[0]
 
 
+def getPosition(name):
+    cardsDB.execute(
+        'SELECT position FROM streets WHERE name=?', (name, ))
+    value = cardsDB.fetchone()
+    return value[0]
+
+
 def getPrice(position):
     cardsDB.execute(
         'SELECT price FROM streets WHERE position=?', (position, ))
@@ -126,24 +133,43 @@ def getTicketPrice(position, owner):
     return value[0]
 
 
-def monopolCheck(position, player):
-    cardsDB.execute(
-        'SELECT kit FROM streets WHERE position=?', (position, ))
-    value = cardsDB.fetchone()
-    kit = value[0]
-    cardsDB.execute(
-        'SELECT count(*) FROM streets WHERE kit=?', (kit, ))
-    value = cardsDB.fetchone()
-    kitSize = value[0]
-    cardsDB.execute(
-        'SELECT count(*) FROM streets WHERE kit=? and owner=?', (kit, player, ))
-    value = cardsDB.fetchone()
-    playerKitCardsCount = value[0]
-    if(kitSize == playerKitCardsCount):
-        return 1
+def monopolCheck(player):
+    cardsDB.execute('SELECT DISTINCT kit FROM streets')
+    value = cardsDB.fetchall()
+    kits = [item[0] for item in value]
+    playerKits = []
+    for kit in kits:
+        cardsDB.execute('SELECT count(*) FROM streets WHERE kit=?', (kit, ))
+        count = cardsDB.fetchone()[0]
+        cardsDB.execute(
+            'SELECT count(*) FROM streets WHERE kit=? AND owner=?', (kit, player, ))
+        playerCardsInKitCount = cardsDB.fetchone()[0]
+        if(count == playerCardsInKitCount):
+            playerKits.append(kit)
+    if(len(playerKits) == 0):
+        return 0
+    else:
+        return playerKits
+
+
+def getHouseAviliableStreets(player):
+    kits = monopolCheck(player)
+    if(kits):
+        aviliableStreets = []
+        for kit in kits:
+            cardsDB.execute(
+                'SELECT position FROM streets WHERE kit=?', (kit, ))
+            value = cardsDB.fetchall()
+            positions = [item[0] for item in value]
+            for position in positions:
+                _, count, _ = getHousesData(position)
+                if(count < 5):
+                    cardsDB.execute(
+                        'SELECT name FROM streets WHERE position=?', (position, ))
+                    aviliableStreets.append(cardsDB.fetchone()[0])
+        return aviliableStreets
     else:
         return 0
-
 
 # DB update functions
 
@@ -173,9 +199,9 @@ def changeSpaceshipOwner(position, player):
     cardsConn.commit()
 
 
-def updateHouseCount(position, houses_bought):
+def updateHouseCount(position):
     cardsDB.execute(
-        "UPDATE streets SET houses_count = houses_count + ? WHERE position=?", (houses_bought, position, ))
+        "UPDATE streets SET houses_count = houses_count + 1 WHERE position=?", (position, ))
     cardsConn.commit()
 
 
