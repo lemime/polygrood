@@ -105,7 +105,7 @@ def generateOptions(position, player):
     if(response == ""):
         response = "[exit]"
     else:
-        response = "[options],Co chcesz zrobic?," + response + "[exit],Nic"
+        response = "[options]" + response + "[exit],Nic"
     return response
 
 
@@ -160,22 +160,27 @@ def main():
         message = input()
         message = message.split(",")
         action = message[0]
-        if(action == "newPosition"):
+        if(action == "[newPosition]"):
             answer = newPosition(int(message[1]), int(message[2]))
             # serial.print("lcd/"+messeage)
             print(answer)
-        elif(action == "buyStreet"):
+        elif(action == "[generateOptions]"):
+            answer = generateOptions(int(message[1]), int(message[2]))
+            print(answer)
+        elif(action == "[buyStreet]"):
             answer = buyStreet(int(message[1]), int(message[2]))
             print(answer)
-        elif (action == "buySpaceship"):
+        elif (action == "[buySpaceship]"):
             answer = buySpaceship(int(message[1]), int(message[2]))
             print(answer)
-        elif (action == "buyHousesOption"):
+        elif (action == "[buyHousesOption]"):
             answer = getPositions(int(message[2]))
             print(answer)
-        elif (action == "buyHouse"):
-            answer = buyHouse(int(message[1]),
-                              message[2])
+        elif (action == "[buyHouse]"):
+            answer = buyHouse(int(message[1]), message[2])
+            print(answer)
+        elif (action == "[exit]"):
+            answer = "[exit]"
             print(answer)
 
 
