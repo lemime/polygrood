@@ -1,6 +1,13 @@
 import dbfunctions
 import random
 
+import Adafruit_BBIO.GPIO as GPIO
+import Adafruit_BBIO.UART as UART
+import time
+import sqlite3
+import os
+import serial
+
 
 # TO DO
 # Zastawianie ulic / kredyt od banku
@@ -155,32 +162,45 @@ def newPosition(position, player):
 def main():
 
     dbfunctions.setupPlayers(4)
-    while True:
 
-        message = input()
+    UART.setup("UART1")
+    ser = serial.Serial(port="/dev/ttyO1", baudrate=9600)
+    ser.close()
+    ser.open()
+
+    while True:
+        message = ser.read()
+
+        # message = input()
         message = message.split(",")
         action = message[0]
         if(action == "[newPosition]"):
             answer = newPosition(int(message[1]), int(message[2]))
-            # serial.print("lcd/"+messeage)
+            ser.write(answer)
             print(answer)
         elif(action == "[generateOptions]"):
             answer = generateOptions(int(message[1]), int(message[2]))
+            ser.write(answer)
             print(answer)
         elif(action == "[buyStreet]"):
             answer = buyStreet(int(message[1]), int(message[2]))
+            ser.write(answer)
             print(answer)
         elif (action == "[buySpaceship]"):
             answer = buySpaceship(int(message[1]), int(message[2]))
+            ser.write(answer)
             print(answer)
         elif (action == "[buyHousesOption]"):
             answer = getPositions(int(message[2]))
+            ser.write(answer)
             print(answer)
         elif (action == "[buyHouse]"):
             answer = buyHouse(int(message[1]), message[2])
+            ser.write(answer)
             print(answer)
         elif (action == "[exit]"):
             answer = "[exit]"
+            ser.write(answer)
             print(answer)
 
 
