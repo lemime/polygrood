@@ -45,7 +45,7 @@ def setup():
     c.execute(
         "INSERT INTO spaceships VALUES ('Santa C-40', 12, 200, 25, 50, 100, 200, 100, 0, 0)")
     c.execute(
-        "INSERT INTO spaceships VALUES ('Grant R-10', 20, 200, 25, 50, 100, 200, 100, 0, 0)")
+        "INSERT INTO spaceships VALUES ('Grant R10', 20, 200, 25, 50, 100, 200, 100, 0, 0)")
     c.execute(
         "INSERT INTO spaceships VALUES ('AZERSTAF', 28, 200, 25, 50, 100, 200, 100, 0, 0)")
 

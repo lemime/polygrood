@@ -1,11 +1,7 @@
 import dbfunctions
 import random
 
-import Adafruit_BBIO.GPIO as GPIO
 import Adafruit_BBIO.UART as UART
-import time
-import sqlite3
-import os
 import serial
 
 
@@ -161,10 +157,20 @@ def newPosition(position, player):
 
 def main():
 
+    ser=serial.Serial(
+    port='COM3',
+    baudrate=9600,
+    parity=serial.PARITY_NONE,
+    stopbits=serial.STOPBITS_ONE,
+    bytesize=serial.EIGHTBITS,
+    timeout=1
+    )
+
+
     dbfunctions.setupPlayers(4)
 
     UART.setup("UART1")
-    ser = serial.Serial(port="/dev/ttyO1", baudrate=9600)
+    # ser = serial.Serial(port="/dev/ttyO1", baudrate=9600)
     ser.close()
     ser.open()
 

@@ -11,7 +11,7 @@ cardsDB = cardsConn.cursor()
 
 
 def setupPlayers(count):
-    for i in range(count):
+    for i in range(count + 1):
         cardsDB.execute(
             "INSERT INTO players VALUES (?, 1500, 0)", (i, ))
     cardsConn.commit()
