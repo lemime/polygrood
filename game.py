@@ -1,21 +1,17 @@
+# -*- coding: utf-8 -*-
 import dbfunctions
 import random
 
 import Adafruit_BBIO.UART as UART
 import serial
 
-
-# TO DO
-# Zastawianie ulic / kredyt od banku
-# Pensja 200 zł, status blokady (Arduino)
-# Bankructwo
-# Nie ma oferty jak nie ma środków
-
-
 spaceshipPositions = [4, 12, 20, 28]
+extraMoney = 0
 specialPositions = [0, 2, 8, 16, 24, 30]
-scholarship = 0
 
+
+def playerLost():
+    return "[lost]"
 
 def getStreetOffer(position):
     price = dbfunctions.getPrice(position)
@@ -35,9 +31,10 @@ def buyStreet(position, player):
     return "[info],Kupiles " + str(name)
 
 
-def buyHouse(player, name):
-    position = dbfunctions.getPosition(name)
+def buyHouse(player, position):
     price = dbfunctions.getHousePrice(position)
+    print(price)
+    print(player)
     dbfunctions.updateAccountBalance(player, -price)
     dbfunctions.updateHouseCount(position)
     return "[info],Kupiles domek"
@@ -50,11 +47,11 @@ def payRent(position, player, owner):
     dbfunctions.updateAccountBalance(owner, rent)
 
     if(dbfunctions.updateAccountBalance(player, -rent)):
-        return "Zaplaciles " + str(rent) + " graczowi " + str(player)
+        return "[info],Zaplaciles " + str(rent) + " graczowi " + str(player)
     else:
         # TO DO
         # Opcja zastaw
-        return "Nie masz wystarczajacych srodkow"
+        return playerLost()
 
 
 def payTicket(position, player, owner):
@@ -63,12 +60,12 @@ def payTicket(position, player, owner):
     if(playerMoney > price):
         dbfunctions.updateAccountBalance(player, -price)
         dbfunctions.updateAccountBalance(owner, price)
-        return "Zaplaciles " + str(price) + " graczowi " + str(player)
+        return "[info],Zaplaciles " + str(price) + " graczowi " + str(player)
 
     else:
         # TO DO
         # Opcja zastaw
-        return "Nie masz wystarczajacych srodkow"
+        return playerLost()
 
 
 def buySpaceship(position, player):
@@ -81,7 +78,10 @@ def buySpaceship(position, player):
 
 def getPositions(player):
     positions = dbfunctions.getHouseAviliableStreets(player)
-    return "[aviliablePositions]," + ",".join(str(position) for position in positions)
+    options = []
+    for position in positions:
+        options.append(str(position[0]) + "," + str(position[1]))
+    return "[aviliablePositions]," + ",".join(option for option in options)
 
 
 def passExam():
@@ -98,67 +98,95 @@ def generateOptions(position, player):
         owner = dbfunctions.getSpaceshipOwner(position)
         if(owner == 0):
             response = response + getSpaceshipOffer(position)
+    elif(position in specialPositions):
+        print("spec")
     else:
         owner = dbfunctions.getOwner(position)
         if(owner == 0):
             response = response + getStreetOffer(position)
     kits = dbfunctions.getHouseAviliableStreets(player)
-    if(kits != 0):
-        response = response + "[buyHousesOption],Kupic domki?,"
+    if(len(kits) > 0):
+        response = response + "[buyHousesOption],Kupic domki,"
     if(response == ""):
         response = "[exit]"
     else:
-        response = "[options]" + response + "[exit],Nic"
+        response = "[options]," + response + "[exit],Nic"
     return response
 
 
 def newPosition(position, player):
     messeage = ""
+    global extraMoney;
     if(position in specialPositions):
         if(position == 2):
             if(dbfunctions.updateAccountBalance(player, -200)):
-                scholarship = scholarship + 200
+                extraMoney += 200
                 messeage = "[info],Zaplaciles za prace dyplomowa"
             else:
                 print("Nie masz srodkow")
         elif(position == 8):
             messeage = "[info],Odwiedzasz spadochroniarzy"
         elif(position == 16):
-            dbfunctions.updateAccountBalance(player, scholarship)
-            scholarship = 0
-            messeage = "[info],Dostales " + \
-                str(scholarship) + "za stypendium naukowe"
+            dbfunctions.updateAccountBalance(player, int(extraMoney))
+            extraMoney = 0
+            messeage = "[info],Dostales " + str(extraMoney) + "zl za stypendium"
         elif(position == 24):
             if(passExam):
-                messeage = "[info],Zdałeś"
+                messeage = "[info],Zdales"
             else:
-                messeage = "[blocked]"
+                messeage = "[info],Dostales 2.0"
         elif(position == 30):
             if(dbfunctions.updateAccountBalance(player, -200)):
-                scholarship = scholarship + 200
+                extraMoney = extraMoney + 200
                 messeage = "[info],Zaplaciles za projekt zaliczeniowy"
             else:
-                print('nie masz srodkow')
+                messeage = playerLost()
     elif (position in spaceshipPositions):
         owner = dbfunctions.getSpaceshipOwner(position)
-        if(owner != player & owner != 0):
-            messeage = payTicket(position, player, owner)
+        if(owner == player):
+            messeage = generateOptions(position,player)
+        elif(owner == 0):
+            messeage = generateOptions(position,player)
         else:
-            messeage = generateOptions(position, player)
+            messeage = payTicket(position, player, owner)
     else:
         owner = dbfunctions.getOwner(position)
-        if(owner != player & owner != 0):
-            messeage = payRent(position, player, owner)
-        else:
+        if(int(owner) == int(player)):
+            messeage =  generateOptions(position, player)
+        elif (int(owner) == 0):
             messeage = generateOptions(position, player)
+        else:
+            messeage = payRent(position, player, owner)
 
     return messeage
 
 
+def is_number(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        pass
+
+    try:
+        import unicodedata
+        unicodedata.numeric(s)
+        return True
+    except (TypeError, ValueError):
+        pass
+
+    return False
+
+
 def main():
 
+    dbfunctions.setupPlayers(4)
+
+    # UART.setup("UART1")
+    # ser = serial.Serial(port="/dev/tty01", baudrate=9600)
+
     ser=serial.Serial(
-    port='COM3',
+    port='/dev/ttyACM0',
     baudrate=9600,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
@@ -166,49 +194,44 @@ def main():
     timeout=1
     )
 
-
-    dbfunctions.setupPlayers(4)
-
-    UART.setup("UART1")
-    # ser = serial.Serial(port="/dev/ttyO1", baudrate=9600)
     ser.close()
     ser.open()
 
     while True:
-        message = ser.read()
-
-        # message = input()
-        message = message.split(",")
+        message = ser.readline()
+        print(message)
+        message = message.decode().split(",")
         action = message[0]
         if(action == "[newPosition]"):
             answer = newPosition(int(message[1]), int(message[2]))
-            ser.write(answer)
+            ser.write(answer.encode())
             print(answer)
         elif(action == "[generateOptions]"):
             answer = generateOptions(int(message[1]), int(message[2]))
-            ser.write(answer)
+            ser.write(answer.encode())
             print(answer)
         elif(action == "[buyStreet]"):
             answer = buyStreet(int(message[1]), int(message[2]))
-            ser.write(answer)
+            ser.write(answer.encode())
             print(answer)
         elif (action == "[buySpaceship]"):
             answer = buySpaceship(int(message[1]), int(message[2]))
-            ser.write(answer)
+            ser.write(answer.encode())
             print(answer)
         elif (action == "[buyHousesOption]"):
             answer = getPositions(int(message[2]))
-            ser.write(answer)
-            print(answer)
-        elif (action == "[buyHouse]"):
-            answer = buyHouse(int(message[1]), message[2])
-            ser.write(answer)
+            ser.write(answer.encode())
             print(answer)
         elif (action == "[exit]"):
             answer = "[exit]"
-            ser.write(answer)
+            ser.write(answer.encode())
+            print(answer)
+        elif (is_number(action)):
+            answer = buyHouse(int(message[2]), int(action))
+            ser.write(answer.encode())
             print(answer)
 
 
 if __name__ == "__main__":
     main()
+

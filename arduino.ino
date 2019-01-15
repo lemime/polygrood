@@ -1,6 +1,12 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Streaming.h>
+#include <Adafruit_NeoPixel.h>
+
+#define PIN 6
+#define LICZBAPOL 32
+
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LICZBAPOL, PIN, NEO_GRB + NEO_KHZ800);
 
 struct Option
 {
@@ -8,14 +14,24 @@ struct Option
     String content;
 };
 
+struct rgb
+{
+    int r;
+    int g;
+    int b;
+};
+
 struct Player
 {
     int id;
     int position;
     bool statusBlocked;
+    rgb color;
 };
 
-Player players[4] = {{1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}};
+rgb fieldColors[32] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+
+Player players[4] = {{1, 0, 0, {1, 1, 0}}, {2, 0, 0, {1, 0, 1}}, {3, 0, 0, {0, 1, 1}}, {4, 0, 0, {0, 1, 0}}};
 int currentPlayerId = 1;
 Player *currentPlayer = &players[currentPlayerId - 1];
 int playersCount = 4;
@@ -28,40 +44,24 @@ String lines[4];
 
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 
-int roll()
-{
-    int diceValue = 0;
-    while (1)
-    {
-        if (!btgs[3])
-        {
-            if (digitalRead(bts[3]) == LOW)
-            {
-                diceValue = random(2, 12);
-                break;
-                btgs[3] = true;
-            }
-        }
-        else
-        {
-            if (digitalRead(bts[3]) == HIGH)
-            {
-                btgs[3] = false;
-            }
-        }
-    }
-    return diceValue;
-}
-
-void showOptions(Option *options, int firstOptionId)
+void showOptions(Option *options, int firstOptionId, int optionsCount)
 {
     lcd.setCursor(0, 0);
     lcd.clear();
+    lcd.print("Co chcesz zrobic?");
     for (int i = 1; i <= 3; i++)
     {
-        lcd.setCursor(1, i);
-        lcd.print(options[firstOptionId + i - 1].content);
+        if (i <= optionsCount + 1)
+        {
+            lcd.setCursor(1, i);
+            lcd.print(options[firstOptionId + i - 1].content);
+        }
     }
+}
+
+unsigned long newrandom(unsigned long howsmall, unsigned long howbig)
+{
+    return howsmall + random() % (howbig - howsmall);
 }
 
 int buttonUp(int currentLine, int optionsCount, Option *options)
@@ -69,7 +69,7 @@ int buttonUp(int currentLine, int optionsCount, Option *options)
     if (currentLine > 3)
     {
         currentLine = currentLine - 1;
-        showOptions(options, currentLine - 3);
+        showOptions(options, currentLine - 3, optionsCount);
         lcd.setCursor(0, 4);
         lcd.write(126);
     }
@@ -78,7 +78,7 @@ int buttonUp(int currentLine, int optionsCount, Option *options)
         if (currentLine > 1)
         {
             currentLine = currentLine - 1;
-            showOptions(options, 0);
+            showOptions(options, 0, optionsCount);
             lcd.setCursor(0, currentLine);
             lcd.write(126);
         }
@@ -89,19 +89,20 @@ int buttonUp(int currentLine, int optionsCount, Option *options)
 int buttonDown(int currentLine, int optionsCount, Option *options)
 {
 
-    if (currentLine < 3)
-    {
-        showOptions(options, 0);
-        currentLine = currentLine + 1;
-        lcd.setCursor(0, currentLine);
-        lcd.write(126);
+    if (currentLine < 3 && currentLine <= optionsCount)
+    {   
+          showOptions(options, 0, optionsCount);
+          currentLine = currentLine + 1;
+          lcd.setCursor(0, currentLine);
+          lcd.write(126);
+
     }
     else
     {
         if (optionsCount > 3 && currentLine < optionsCount)
         {
             currentLine = currentLine + 1;
-            showOptions(options, currentLine - 3);
+            showOptions(options, currentLine - 3, optionsCount);
             lcd.setCursor(0, 4);
             lcd.write(126);
         }
@@ -163,6 +164,10 @@ String chooseOption(int optionsCount, Option *options)
         }
     }
 
+    if (options[currentLine - 1].designation == "[buyStreet]" || options[currentLine - 1].designation == "[buySpaceship]")
+    {
+        changeFieldColors(currentPlayer->position, {currentPlayer->color.r, currentPlayer->color.g, currentPlayer->color.b});
+    }
     return options[currentLine - 1].designation;
 }
 
@@ -173,7 +178,7 @@ void confirmWait()
     }
 }
 
-void showInfo(String content)
+void showInfo(String content, String click = "OK")
 {
     lcd.setCursor(0, 0);
     lcd.clear();
@@ -191,9 +196,92 @@ void showInfo(String content)
     }
 
     lcd.setCursor(4, 4);
-    lcd.print("Wcisnij [OK]");
+    lcd.print("Wcisnij [" + click + "]");
     confirmWait();
-    Serial.print("[generateOptions]," + String(currentPlayer->position) + ',' + String(currentPlayerId));
+    Serial.print("[generateOptions]," + String(currentPlayer->position) + "," + String(currentPlayerId));
+}
+
+void playerLost()
+{
+    showInfo("Gracz " + String(currentPlayerId) + " przegrywa.");
+}
+
+void changeFieldColors(int id, rgb color)
+{
+
+    fieldColors[id].r = fieldColors[id].r + color.r;
+    fieldColors[id].g = fieldColors[id].g + color.g;
+    fieldColors[id].b = fieldColors[id].b + color.b;
+
+    if (fieldColors[id].r < 0)
+    {
+        fieldColors[id].r = 0;
+    }
+    if (fieldColors[id].g < 0)
+    {
+        fieldColors[id].g = 0;
+    }
+    if (fieldColors[id].b < 0)
+    {
+        fieldColors[id].b = 0;
+    }
+}
+
+void dothetrick(int prev, int curr)
+{
+
+    changeFieldColors(prev, {-currentPlayer->color.r * 200, -currentPlayer->color.g * 200, -currentPlayer->color.b * 200});
+    pixels.setPixelColor(prev, fieldColors[prev].r, fieldColors[prev].g, fieldColors[prev].b);
+    pixels.show();
+
+    for (int i = prev + 1; i <= curr; i++)
+    {
+        pixels.setPixelColor(i, currentPlayer->color.r * 200, currentPlayer->color.g * 200, currentPlayer->color.b * 200);
+        pixels.show();
+        delay(150);
+        pixels.setPixelColor(i, fieldColors[i].r, fieldColors[i].g, fieldColors[i].b);
+        pixels.show();
+    }
+
+    changeFieldColors(curr, {currentPlayer->color.r * 200, currentPlayer->color.g * 200, currentPlayer->color.b * 200});
+    pixels.setPixelColor(curr, fieldColors[curr].r, fieldColors[curr].g, fieldColors[curr].b);
+
+    pixels.setPixelColor(curr, 0, 0, 0);
+    pixels.show();
+    delay(300);
+    pixels.setPixelColor(curr, fieldColors[curr].r, fieldColors[curr].g, fieldColors[curr].b);
+    pixels.show();
+}
+
+int roll()
+{
+    int diceValue = 0;
+    lcd.setCursor(0, 0);
+    lcd.clear();
+    lcd.print("Gracz " + String(currentPlayerId) + " rzuca kostka");
+    lcd.setCursor(2, 4);
+    lcd.print("Wcisnij [ROLL]");
+    while (1)
+    {
+        if (!btgs[3])
+        {
+            if (digitalRead(bts[3]) == LOW)
+            {
+                diceValue = newrandom(2, 12);
+                break;
+                btgs[3] = true;
+            }
+        }
+        else
+        {
+            if (digitalRead(bts[3]) == HIGH)
+            {
+                btgs[3] = false;
+            }
+        }
+    }
+
+    return diceValue;
 }
 
 int count_commas(String s)
@@ -214,68 +302,74 @@ void getOptions(String content)
     Option option;
     int counter = 0;
 
-    char *cstr = new char[content.length() + 1];
-    strcpy(cstr, content.c_str());
+    String delimiter = ",";
 
-    char *frag = strtok(cstr, ",");
-    option.designation = frag;
-    frag = strtok(NULL, ",");
-    option.content = frag;
-    options[counter] = option;
-    counter++;
-
-    while (frag != NULL)
+    while (counter < optionsCount)
     {
-        frag = strtok(NULL, ",");
-        option.designation = frag;
-        frag = strtok(NULL, ",");
-        option.content = frag;
+        option.designation = content.substring(0, content.indexOf(delimiter));
+        content.remove(0, content.indexOf(delimiter) + delimiter.length());
+        option.content = content.substring(0, content.indexOf(delimiter));
+        content.remove(0, content.indexOf(delimiter) + delimiter.length());
         options[counter] = option;
         counter++;
     }
-    showOptions(options, 0);
+    showOptions(options, 0, optionsCount - 1);
     lcd.setCursor(0, 1);
     lcd.write(126);
-    Serial.print(chooseOption(counter - 1, options) + ',' + currentPlayer->position + "," + currentPlayerId + ',');
+    Serial.print(String(chooseOption(counter - 1, options)) + ',' + String(currentPlayer->position) + "," + String(currentPlayerId));
 }
 
 void nextPlayer()
 {
     currentPlayerId++;
-    currentPlayerId % playersCount;
+    if (currentPlayerId > playersCount)
+    {
+        currentPlayerId = 1;
+    }
     currentPlayer = &players[currentPlayerId - 1];
+    int prevPos = currentPlayer->position;
     currentPlayer->position = currentPlayer->position + roll();
+    if (currentPlayer->position >= 32)
+    {
+        currentPlayer->position = currentPlayer->position - 32;
+    }
+    dothetrick(prevPos, currentPlayer->position);
     Serial.print("[newPosition]," + String(currentPlayer->position) + "," + String(currentPlayerId));
 }
 
 void chooseAction(String str)
 {
-    String action = "";
-    int i = 1;
-    while (str[i] != 93 || str[i] != 44)
-    {
-        action = action + str[i];
-        i++;
-    }
-    i++;
 
-    if (action == "info")
+    String delimiter = ",";
+    String action = str.substring(0, str.indexOf(delimiter));
+    str.remove(0, str.indexOf(delimiter) + delimiter.length());
+
+    if (action == "[info]")
     {
-        showInfo(str.substring(i));
+        showInfo(str);
     }
-    else if (action == "options")
+    else if (action == "[options]")
     {
-        getOptions(str.substring(i));
+        getOptions(str);
     }
-    else if (action == "exit")
+    else if (action == "[lost]")
+    {
+        playerLost();
+    }
+    else if (action == "[exit]")
     {
         nextPlayer();
+    }
+    else if (action == "[aviliablePositions]")
+    {
+        getOptions(str);
     }
 }
 
 void setup()
 {
     Serial.begin(9600);
+    pixels.begin();
     for (int i = 0; i < nbts; i++)
         bts[i] = i + startpin;
     for (int i = 0; i < nbts; i++)
@@ -287,8 +381,17 @@ void setup()
 
     lcd.begin(20, 4);
     lcd.backlight();
+    randomSeed(analogRead(0));
 
+    for (int i = 0; i < 32; i++)
+    {
+        pixels.setPixelColor(i, 0, 0, 0);
+    }
+    pixels.show();
+
+    int prev = currentPlayer->position;
     currentPlayer->position = currentPlayer->position + roll();
+    dothetrick(prev, currentPlayer->position);
     Serial.print("[newPosition]," + String(currentPlayer->position) + "," + String(currentPlayerId));
 }
 

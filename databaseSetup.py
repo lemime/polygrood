@@ -11,7 +11,7 @@ def setup():
     c.execute('''CREATE TABLE streets
                 (name text, position integer, price integer, house_0 integer,  house_1 integer, house_2 integer, house_3 integer, house_4 integer, house_5 integer, house_price integer, hotel_price integer, mortgage_value integer, owner integer, houses_count integer, pledge integer, kit text)''')
 
-    c.execute("INSERT INTO streets VALUES ('Elektronika i telek.', 1, 60, 2, 10, 30, 90, 160, 250, 50, 250, 30, 0, 0, 0, 'braz')")
+    c.execute("INSERT INTO streets VALUES ('Elektronika i tele.', 1, 60, 2, 10, 30, 90, 160, 250, 50, 250, 30, 0, 0, 0, 'braz')")
     c.execute("INSERT INTO streets VALUES ('Teleinformatyka', 3, 60, 4, 20, 60, 180, 320, 450, 50, 250, 30, 0, 0, 0, 'braz')")
     c.execute("INSERT INTO streets VALUES ('Inz. bezpieczenstwa', 5, 100, 6, 30, 90, 270, 400, 550, 50, 250, 50, 0, 0, 0, 'blekit')")
     c.execute("INSERT INTO streets VALUES ('Logistyka', 6, 100, 6, 30, 90, 270, 400, 550, 50, 250, 50, 0, 0, 0, 'blekit')")
@@ -53,3 +53,4 @@ def setup():
 
     conn.commit()
     conn.close()
+
