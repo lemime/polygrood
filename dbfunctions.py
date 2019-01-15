@@ -154,8 +154,8 @@ def monopolCheck(player):
 
 def getHouseAviliableStreets(player):
     kits = monopolCheck(player)
+    aviliableStreets = []
     if(kits):
-        aviliableStreets = []
         for kit in kits:
             cardsDB.execute(
                 'SELECT position FROM streets WHERE kit=?', (kit, ))
@@ -165,11 +165,9 @@ def getHouseAviliableStreets(player):
                 _, count, _ = getHousesData(position)
                 if(count < 5):
                     cardsDB.execute(
-                        'SELECT name FROM streets WHERE position=?', (position, ))
-                    aviliableStreets.append(cardsDB.fetchone()[0])
-        return aviliableStreets
-    else:
-        return 0
+                        'SELECT position, name FROM streets WHERE position=?', (position, ))
+                    aviliableStreets.append(cardsDB.fetchone())
+    return aviliableStreets
 
 # DB update functions
 
@@ -210,3 +208,4 @@ def clean():
 
 
 atexit.register(clean)
+

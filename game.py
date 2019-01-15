@@ -182,17 +182,17 @@ def main():
 
     dbfunctions.setupPlayers(4)
 
-    # UART.setup("UART1")
-    # ser = serial.Serial(port="/dev/tty01", baudrate=9600)
+    UART.setup("UART1")
+    ser = serial.Serial(port="/dev/tty01", baudrate=9600)
 
-    ser=serial.Serial(
-    port='/dev/ttyACM0',
-    baudrate=9600,
-    parity=serial.PARITY_NONE,
-    stopbits=serial.STOPBITS_ONE,
-    bytesize=serial.EIGHTBITS,
-    timeout=1
-    )
+    # ser=serial.Serial(
+    # port='/dev/ttyACM0',
+    # baudrate=9600,
+    # parity=serial.PARITY_NONE,
+    # stopbits=serial.STOPBITS_ONE,
+    # bytesize=serial.EIGHTBITS,
+    # timeout=1
+    # )
 
     ser.close()
     ser.open()
