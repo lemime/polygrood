@@ -116,7 +116,7 @@ def generateOptions(position, player):
 
 def newPosition(position, player):
     messeage = ""
-    global extraMoney;
+    global extraMoney
     if(position in specialPositions):
         if(position == 2):
             if(dbfunctions.updateAccountBalance(player, -200)):
