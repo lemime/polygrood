@@ -189,36 +189,43 @@ def main():
 
     while True:
         print("1")
-	message = ser.readline()
+        message = ser.readline()
         print(message)
         message = message.decode().split(",")
         action = message[0]
         if(action == "[newPosition]"):
             answer = newPosition(int(message[1]), int(message[2]))
+            answer = answer + "\r"
             ser.write(answer.encode())
             print(answer)
         elif(action == "[generateOptions]"):
             answer = generateOptions(int(message[1]), int(message[2]))
+            answer = answer + "\r"
             ser.write(answer.encode())
             print(answer)
         elif(action == "[buyStreet]"):
             answer = buyStreet(int(message[1]), int(message[2]))
+            answer = answer + "\r"
             ser.write(answer.encode())
             print(answer)
         elif (action == "[buySpaceship]"):
             answer = buySpaceship(int(message[1]), int(message[2]))
+            answer = answer + "\r"
             ser.write(answer.encode())
             print(answer)
         elif (action == "[buyHousesOption]"):
             answer = getPositions(int(message[2]))
+            answer = answer + "\r"
             ser.write(answer.encode())
             print(answer)
         elif (action == "[exit]"):
             answer = "[exit]"
+            answer = answer + "\r"
             ser.write(answer.encode())
             print(answer)
         elif (is_number(action)):
             answer = buyHouse(int(message[2]), int(action))
+            answer = answer + "\r"
             ser.write(answer.encode())
             print(answer)
 

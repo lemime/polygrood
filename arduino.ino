@@ -401,6 +401,12 @@ void loop()
     while (Serial.available() > 0)
     {
         String str = Serial.readString();
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Kokos");
+        delay(1000);
+        lcd.print(str);
+        delay(1000);
         chooseAction(str);
     }
 
